@@ -1,0 +1,20 @@
+---
+title: "Preparación datos"
+output: html_notebook
+---
+
+## Descarga datos
+
+Descarga de los microdatos de la EPF 2020 desde el INE:
+```{r}
+url <- "https://www.ine.es/ftp/microdatos/epf2006/datos_2020.zip"
+dest <- "./datos_2020.zip"
+
+if(!file.exists(dest))
+  download.file(url, dest)
+```
+Descomprimir el archivo zip es problemático (al menos en macOS). El nombre de un fichero Word usa una codificación de caracteres obsoleta e incompatible con macOS. Debido a esto la función `unzip()` no funciona en este caso. El módulo zipfile de python 3.9 descomprime correctamente el fichero:
+```{sh}
+python3.9 -m zipfile -e datos_2020.zip .
+```
+
