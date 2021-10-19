@@ -3,4 +3,6 @@
 .RData
 .Ruserdata
 *.html
-01\ -\ Proceso\ datos\ INE/datos_2020*
+*.zip
+__pycache__
+data/INE
