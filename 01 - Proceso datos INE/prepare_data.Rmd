@@ -1,20 +1,63 @@
 ---
-title: "Preparación datos"
-output: html_notebook
+title: "EPF 2020"
+author: "José Pernías"
+date: "19/10/2021"
+output: html_document
 ---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Módulos
+
+Se importan dos módulos auxiliares:
+
+- `compress`: contiene una función para descomprimir archivos zip, `unzip()`, y otra función para comprimir archivos con el algoritmo BZ2, `compress()`.
+
+- `download`: contiene una función para descargar un archivo desde un URL, `download()`.
+
+```{python}
+import compress
+import download
+```
+
+También se importa el módulo standard `os.path`:
+```{python}
+import os.path
+```
+
 
 ## Descarga datos
 
-Descarga de los microdatos de la EPF 2020 desde el INE:
-```{r}
-url <- "https://www.ine.es/ftp/microdatos/epf2006/datos_2020.zip"
-dest <- "./datos_2020.zip"
+Si es necesario, se descargan los microdatos de la EPF 2020 desde el INE:
+```{python}
+name = "datos_2020"
+url = f"https://www.ine.es/ftp/microdatos/epf2006/{name}.zip"
+path = f"./{name}.zip"
 
-if(!file.exists(dest))
-  download.file(url, dest)
+if not os.path.exists(path):
+  download.download(url, path)
 ```
-Descomprimir el archivo zip es problemático (al menos en macOS). El nombre de un fichero Word usa una codificación de caracteres obsoleta e incompatible con macOS. Debido a esto la función `unzip()` no funciona en este caso. El módulo zipfile de python 3 descomprime correctamente el fichero:
-```{sh}
-python3 -m zipfile -e datos_2020.zip .
+Se descomprime el archivo zip en una subcarpeta de `./data/`:
+```{python}
+data_dir = "../data/INE"
+compress.unzip(path, data_dir)
+```
+
+## Compresión de los datos
+
+Se utiliza el algoritmo BZ2 para comprimir los datos de la EPF y se eliminan los ficheros originales:
+```{python}
+file_dict = {
+  "gastos.bz2":  "Fichero de usuario de gastos a2020AJUSTE",
+  "hogar.bz2":  "Fichero de usuario de hogar a2020IMPAJUSTE",
+  "miembros.bz2":  "Fichero de usuario de miembros a2020IMPAJUSTE",
+}
+
+for oname, iname in file_dict.items():
+  ipath = f"{data_dir}/{name}/{iname}"
+  compress.compress(ipath, f"{data_dir}/{name}/{oname}")
+  os.remove(ipath)
 ```
 
