@@ -1,0 +1,94 @@
+---
+title: "Lectura EPF 2020"
+author: "José Pernías"
+date: "20/10/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Preliminares
+
+Bibliotecas R:
+```{r}
+library(readr)
+library(stringr)
+library(purrr)
+library(dplyr)
+```
+
+Carpeta con los datos originales:
+```{r}
+ine_data_dir <- "../data/INE/datos_2020"
+```
+
+## Diccionario variables
+
+```{r}
+parse_vars <- function(fname, vars) {
+  v <- vars %>% 
+    str_trim(side = "right") %>%
+    str_split("\n") %>% 
+    pluck(1)
+  m <- str_match(v, "^([A-Z0-9]+)[^T]+T([0-9]+),([A-Z0-9.]+)")
+  tibble(file = str_to_lower(fname),
+         var = m[, 2],
+         start = m[, 3],
+         code = m[, 4])
+}
+
+read_input_file <- function(path) {
+  epf_inputs <- read_lines(path) %>%
+    str_c(collapse = "\n") %>%
+    str_match_all("FICHERO DE ([^*:]+)[^/]+/ ([\\s\\S]+?)EXECUTE") %>%
+    pluck(1)
+  
+  colnames(epf_inputs) <- c("", "file", "vars")
+  epf_df <- as_tibble(epf_inputs[, -1])
+  
+  epf_dict <- map2_dfr(epf_df$file, epf_df$vars, parse_vars) 
+
+  width <- as.integer(str_match(epf_dict$code, "^.([0-9]+)")[, 2])
+  dec <- as.integer(str_match(epf_dict$code, "\\.([0-9]+)$")[, 2])
+  epf_dict %>%  mutate(width = width, 
+                       dec = if_else(is.na(dec), 0L, dec),
+                       type = if_else(str_starts(code, "A"), "c",
+                                      if_else(dec > 0, "d", "i")))
+}
+
+input_file <- paste0(ine_data_dir, "/Inputs SPSS 2020.txt")
+epf_dict <- read_input_file(input_file)
+
+```
+
+## Lectura ficheros de datos
+
+```{r}
+read_epf_file <- function(fname) {
+  dict <- epf_dict %>% filter(file == fname)
+  
+  df <- read_fwf(paste0(ine_data_dir, "/", fname, ".bz2"), 
+                 col_positions = fwf_widths(dict$width, dict$var),
+                 col_types = paste0(dict$type, collapse = ""))
+
+  ## Adjust variables with decimals
+  dec_dict <- dict %>% 
+    filter(dec != 0) %>%
+    select(var, dec)
+
+  for(i in seq_along(dec_dict$var)) {
+    var <- dec_dict$var[i]
+    dec <- dec_dict$dec[i]
+    df[, var] <- df[, var] / 10^dec
+  }
+  
+  df
+}
+
+hogar <- read_epf_file("hogar")
+miembros <- read_epf_file("miembros")
+gastos <- read_epf_file("gastos")
+```
+
