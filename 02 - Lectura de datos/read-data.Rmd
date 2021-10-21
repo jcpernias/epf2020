@@ -21,7 +21,8 @@ library(dplyr)
 
 Carpeta con los datos originales:
 ```{r}
-ine_data_dir <- "../data/INE/datos_2020"
+data_dir <- "../data"
+ine_data_dir <- paste0(data_dir, "/INE/datos_2020")
 ```
 
 ## Diccionario variables
@@ -90,5 +91,13 @@ read_epf_file <- function(fname) {
 hogar <- read_epf_file("hogar")
 miembros <- read_epf_file("miembros")
 gastos <- read_epf_file("gastos")
+```
+
+## Guarda ficheros de datos 
+
+```{r}
+save(hogar, file = paste0(data_dir, "/hogar.Rdata"), compress = "xz")
+save(miembros, file = paste0(data_dir, "/miembros.Rdata"), compress = "xz")
+save(gastos, file = paste0(data_dir, "/gastos.Rdata"), compress = "xz")
 ```
 
