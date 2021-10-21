@@ -18,11 +18,14 @@ library(stringr)
 library(purrr)
 library(dplyr)
 ```
-
-Carpeta con los datos originales:
+Carpeta de datos:
 ```{r}
-data_dir <- "../data"
-ine_data_dir <- paste0(data_dir, "/INE/datos_2020")
+data_dir <- file.path("..", "data")
+```
+
+Carpeta con los datos originales del INE:
+```{r}
+ine_data_dir <- file.path(data_dir, "INE", "datos_2020")
 ```
 
 ## Diccionario variables
@@ -59,7 +62,7 @@ read_input_file <- function(path) {
                                       if_else(dec > 0, "d", "i")))
 }
 
-input_file <- paste0(ine_data_dir, "/Inputs SPSS 2020.txt")
+input_file <- file.path(ine_data_dir, "Inputs SPSS 2020.txt")
 epf_dict <- read_input_file(input_file)
 
 ```
@@ -70,7 +73,7 @@ epf_dict <- read_input_file(input_file)
 read_epf_file <- function(fname) {
   dict <- epf_dict %>% filter(file == fname)
   
-  df <- read_fwf(paste0(ine_data_dir, "/", fname, ".bz2"), 
+  df <- read_fwf(file.path(ine_data_dir, paste0(fname, ".bz2")), 
                  col_positions = fwf_widths(dict$width, dict$var),
                  col_types = paste0(dict$type, collapse = ""))
 
@@ -96,8 +99,8 @@ gastos <- read_epf_file("gastos")
 ## Guarda ficheros de datos 
 
 ```{r}
-save(hogar, file = paste0(data_dir, "/hogar.Rdata"), compress = "xz")
-save(miembros, file = paste0(data_dir, "/miembros.Rdata"), compress = "xz")
-save(gastos, file = paste0(data_dir, "/gastos.Rdata"), compress = "xz")
+save(hogar, file = file.path(data_dir, "hogar.Rdata"), compress = "xz")
+save(miembros, file = file.path(data_dir, "miembros.Rdata"), compress = "xz")
+save(gastos, file = file.path(data_dir, "gastos.Rdata"), compress = "xz")
 ```
 
