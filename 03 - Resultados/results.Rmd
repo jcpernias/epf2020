@@ -1,0 +1,61 @@
+---
+title: "Resultados EPF 2020"
+author: "José Pernías"
+date: "10/22/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Preliminares
+
+Bibliotecas R:
+```{r}
+library(tidyverse)
+```
+Carpeta de datos:
+```{r}
+data_dir <- file.path("..", "data")
+```
+
+Lectura de las bases de datos:
+```{r}
+df_names <- c("hogar", "miembros", "gastos")
+file_paths <- map_chr(df_names, ~ file.path(data_dir, paste0(.x, ".Rdata")))
+walk(file_paths, ~ load(.x, .GlobalEnv))
+```
+
+## Hogares 
+
+Distribución porcentual de hogares y personas según tamaño del hogar:
+
+ Tamaño           | Hogares | Personas 
+ ---------------- |-------- | --------  
+ Total	          | 100,00	| 100,00   
+ 1 miembro	      |  26,35	|  10,59   
+ 2 miembros	      |  30,24	|  24,30   
+ 3 miembros	      |  20,48  |	 24,69   
+ 4 miembros	      |  17,03	|  27,37   
+ 5 o más miembros |   5,91	|  13,05   
+
+```{r}
+hogar %>% count(TAMANO, wt = FACTOR) %>% mutate(pct = 100 * n / sum(n))
+```
+
+```{r}
+library(srvyr)
+svy_hogar <- hogar %>%
+  as_survey(NUMERO, weight = FACTOR)
+```
+
+```{r}
+svy_hogar %>% group_by(TAMANO) %>%
+  summarise(Hogares = survey_total(), 
+            Personas = survey_total(NMIEMB)) %>%
+  mutate(Hogares_pct = 100 * Hogares / sum(Hogares),
+         Personas_pct = 100 * Personas / sum(Personas))
+
+```
+
