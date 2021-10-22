@@ -17,6 +17,7 @@ library(readr)
 library(stringr)
 library(purrr)
 library(dplyr)
+library(tidyr)
 ```
 Carpeta de datos:
 ```{r}
@@ -93,8 +94,23 @@ read_epf_file <- function(fname) {
 
 hogar <- read_epf_file("hogar")
 miembros <- read_epf_file("miembros")
-gastos <- read_epf_file("gastos")
+gastos_orig <- read_epf_file("gastos")
 ```
+
+
+```{r}
+gastos_tipo <- gastos_orig %>%
+  select(ANOENC, NUMERO, CODIGO, GASTMON, 
+         GASTNOM1, GASTNOM2, GASTNOM3, GASTNOM4, GASTNOM5) %>%
+  pivot_longer(-c(ANOENC, CODIGO, NUMERO), 
+               names_to = "TIPO",
+               values_to = "VALOR") %>%
+  filter(!is.na(VALOR))
+
+gastos <- gastos_orig %>% 
+  select(-(GASTMON:GASTNOM5))
+```
+
 
 ## Guarda ficheros de datos 
 
@@ -102,5 +118,6 @@ gastos <- read_epf_file("gastos")
 save(hogar, file = file.path(data_dir, "hogar.Rdata"), compress = "xz")
 save(miembros, file = file.path(data_dir, "miembros.Rdata"), compress = "xz")
 save(gastos, file = file.path(data_dir, "gastos.Rdata"), compress = "xz")
+save(gastos_tipo, file = file.path(data_dir, "gastos_tipo.Rdata"), compress = "xz")
 ```
 
