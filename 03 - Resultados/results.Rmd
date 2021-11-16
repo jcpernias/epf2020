@@ -60,3 +60,13 @@ svy_hogar %>% group_by(TAMANO) %>%
 
 ```
 
+
+## Gastos
+
+```{r}
+gastos %>% 
+  mutate(code2 = str_sub(CODIGO, end = 2)) %>%
+  group_by(code2) %>%
+  summarise(total = sum(GASTO) / 1000,
+            gasto_hogar = total / 19170)
+```
