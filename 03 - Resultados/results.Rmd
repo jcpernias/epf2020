@@ -54,6 +54,7 @@ svy_hogar <- hogar %>%
 svy_hogar %>% group_by(TAMANO) %>%
   summarise(Hogares = survey_total(), 
             Personas = survey_total(NMIEMB)) %>%
+  select(-ends_with("_se")) %>%
   mutate(Hogares_pct = 100 * Hogares / sum(Hogares),
          Personas_pct = 100 * Personas / sum(Personas))
 
