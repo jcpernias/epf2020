@@ -30,34 +30,37 @@ import os.path
 
 ## Descarga datos
 
-Si es necesario, se descargan los microdatos de la EPF 2020 desde el INE:
-```{python}
-name = "datos_2020"
-url = f"https://www.ine.es/ftp/microdatos/epf2006/{name}.zip"
-path = f"./{name}.zip"
-
-if not os.path.exists(path):
-  download.download(url, path)
-```
-Se descomprime el archivo zip en una subcarpeta de `./data/`:
+Si es necesario, se descargan los microdatos de la EPF de los años 2019 y 2020 desde el INE, y se descomprimen en la carpeta `../data/INE`:
 ```{python}
 data_dir = "../data/INE"
-compress.unzip(path, data_dir)
+
+years = [2019, 2020]
+names = [ f"datos_{y}" for y in years  ]
+
+for name in names:
+  path = f"./{name}.zip"
+  if not os.path.exists(path):
+    url = f"https://www.ine.es/ftp/microdatos/epf2006/{name}.zip"
+    download.download(url, path)
+    compress.unzip(path, os.path.join(data_dir, name))
+
 ```
 
 ## Compresión de los datos
 
 Se utiliza el algoritmo BZ2 para comprimir los datos de la EPF y se eliminan los ficheros originales:
 ```{python}
-file_dict = {
-  "gastos.bz2":  "Fichero de usuario de gastos a2020AJUSTE",
-  "hogar.bz2":  "Fichero de usuario de hogar a2020IMPAJUSTE",
-  "miembros.bz2":  "Fichero de usuario de miembros a2020IMPAJUSTE",
-}
+common_str = "Fichero de usuario de "
+for name in names:
+  epf_dir = os.path.join(data_dir, name)
+  files = [ n for n in os.listdir(epf_dir) if n.startswith(common_str) ]
+  for infile in files:
+    ftype = infile.split()[4]
+    ipath = os.path.join(epf_dir, infile)
+    opath = os.path.join(epf_dir, f"{ftype}.bz2")
+    compress.compress(ipath, opath)
+    os.remove(ipath)
 
-for oname, iname in file_dict.items():
-  ipath = f"{data_dir}/{name}/{iname}"
-  compress.compress(ipath, f"{data_dir}/{name}/{oname}")
-  os.remove(ipath)
+
 ```
 

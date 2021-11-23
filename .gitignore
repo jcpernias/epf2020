@@ -6,4 +6,5 @@
 *.zip
 __pycache__
 data/INE/datos_2020
+data/INE/datos_2019
 *.Rdata
