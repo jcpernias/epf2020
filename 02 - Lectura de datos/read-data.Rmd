@@ -18,6 +18,7 @@ library(stringr)
 library(purrr)
 library(dplyr)
 library(tidyr)
+library(glue)
 ```
 Carpeta de datos:
 ```{r}
@@ -26,8 +27,14 @@ data_dir <- file.path("..", "data")
 
 Carpeta con los datos originales del INE:
 ```{r}
-ine_data_dir <- file.path(data_dir, "INE", "datos_2020")
+ine_data_dir <- file.path(data_dir, "INE")
 ```
+
+Ediciones de la EPF que se procesan:
+```{r}
+years <- c(2019, 2020)
+```
+
 
 ## Diccionario variables
 
@@ -63,43 +70,58 @@ read_input_file <- function(path) {
                                       if_else(dec > 0, "d", "i")))
 }
 
-input_file <- file.path(ine_data_dir, "Inputs SPSS 2020.txt")
-epf_dict <- read_input_file(input_file)
-
+build_dict <- function(year) {
+  iname <- glue("Inputs SPSS {year}.txt")
+  year_dir <- glue("datos_{year}")
+  input_file <- file.path(ine_data_dir, year_dir, iname)
+  read_input_file(input_file) 
+}
 ```
 
 ## Lectura ficheros de datos
 
 ```{r}
-read_epf_file <- function(fname) {
-  dict <- epf_dict %>% filter(file == fname)
-  
-  df <- read_fwf(file.path(ine_data_dir, paste0(fname, ".bz2")), 
+read_epf_file <- function(fname, year, var_dict) {
+  dict <- var_dict %>% filter(file == fname)
+  year_dir <- glue("datos_{year}")
+  bz_name <- glue("{fname}.bz2")
+  epf_file <- file.path(ine_data_dir, year_dir, bz_name)
+
+  df <- read_fwf(epf_file, 
                  col_positions = fwf_widths(dict$width, dict$var),
                  col_types = paste0(dict$type, collapse = ""))
-
   ## Adjust variables with decimals
   dec_dict <- dict %>% 
     filter(dec != 0) %>%
     select(var, dec)
 
-  for(i in seq_along(dec_dict$var)) {
-    var <- dec_dict$var[i]
-    dec <- dec_dict$dec[i]
-    df[, var] <- df[, var] / 10^dec
-  }
-  
+  pwalk(dec_dict, function(var, dec) {
+    df[, var] <<- df[, var] / 10^dec
+  })
+
   df
 }
 
-hogar <- read_epf_file("hogar")
-miembros <- read_epf_file("miembros")
-gastos_orig <- read_epf_file("gastos")
-```
+write_data <- function(x, name, path) {
+  assign(name, x)
+  save(list = name, file = path, compress = "xz")
+}
 
+write_epf_data <- function(year, path) {
+  epf_dict <- build_dict(year)
+  
+  hogar <- read_epf_file("hogar", year, epf_dict)
+  db_name <- glue("hogar_{year}")
+  write_data(hogar, db_name, file.path(path, glue("{db_name}.Rdata")))
 
-```{r}
-gastos_tipo <- gastos_orig %>%
+  
+  miembros <- read_epf_file("miembros", year, epf_dict)
+  db_name <- glue("miembros_{year}")
+  write_data(miembros, db_name, file.path(path, glue("{db_name}.Rdata")))
+
+  gastos_orig <- read_epf_file("gastos", year, epf_dict)
+
+  gastos_tipo <- gastos_orig %>%
   select(ANOENC, NUMERO, CODIGO, GASTMON, 
          GASTNOM1, GASTNOM2, GASTNOM3, GASTNOM4, GASTNOM5) %>%
   pivot_longer(-c(ANOENC, CODIGO, NUMERO), 
@@ -107,17 +129,17 @@ gastos_tipo <- gastos_orig %>%
                values_to = "VALOR") %>%
   filter(!is.na(VALOR))
 
-gastos <- gastos_orig %>% 
-  select(-(GASTMON:GASTNOM5))
+  gastos <- gastos_orig %>% 
+    select(-(GASTMON:GASTNOM5))
+
+  db_name <- glue("gastos_{year}")
+  write_data(gastos, db_name, file.path(path, glue("{db_name}.Rdata")))
+
+  db_name <- glue("gastos_tipo_{year}")
+  write_data(gastos_tipo, db_name, file.path(path, glue("{db_name}.Rdata")))
+}
+
+walk(years, write_epf_data, data_dir)
 ```
 
-
-## Guarda ficheros de datos 
-
-```{r}
-save(hogar, file = file.path(data_dir, "hogar.Rdata"), compress = "xz")
-save(miembros, file = file.path(data_dir, "miembros.Rdata"), compress = "xz")
-save(gastos, file = file.path(data_dir, "gastos.Rdata"), compress = "xz")
-save(gastos_tipo, file = file.path(data_dir, "gastos_tipo.Rdata"), compress = "xz")
-```
 
