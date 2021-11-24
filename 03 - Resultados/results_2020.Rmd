@@ -22,8 +22,12 @@ data_dir <- file.path("..", "data")
 
 Lectura de las bases de datos:
 ```{r}
+year <- 2020
 df_names <- c("hogar", "miembros", "gastos")
-file_paths <- map_chr(df_names, ~ file.path(data_dir, paste0(.x, ".Rdata")))
+file_paths <- map_chr(df_names, function(nm) {
+  base <- glue("{nm}_{year}.Rdata")
+  file.path(data_dir, base)
+})
 walk(file_paths, ~ load(.x, .GlobalEnv))
 ```
 
@@ -41,17 +45,17 @@ Distribución porcentual de hogares y personas según tamaño del hogar:
  5 o más miembros |   5,91	|  13,05   
 
 ```{r}
-hogar %>% count(TAMANO, wt = FACTOR) %>% mutate(pct = 100 * n / sum(n))
+hogar_2020 %>% count(TAMANO, wt = FACTOR) %>% mutate(pct = 100 * n / sum(n))
 ```
 
 ```{r}
 library(srvyr)
-svy_hogar <- hogar %>%
+svy_hogar_2020 <- hogar_2020 %>%
   as_survey(NUMERO, weight = FACTOR)
 ```
 
 ```{r}
-svy_hogar %>% group_by(TAMANO) %>%
+svy_hogar_2020 %>% group_by(TAMANO) %>%
   summarise(Hogares = survey_total(), 
             Personas = survey_total(NMIEMB)) %>%
   select(-ends_with("_se")) %>%
@@ -64,9 +68,13 @@ svy_hogar %>% group_by(TAMANO) %>%
 ## Gastos
 
 ```{r}
-gastos %>% 
+num_households_2020 <- hogar_2020 %>% 
+  summarise(n = sum(FACTOR)) %>% pull(n)
+
+
+gastos_2020 %>% 
   mutate(code2 = str_sub(CODIGO, end = 2)) %>%
   group_by(code2) %>%
   summarise(total = sum(GASTO) / 1000,
-            gasto_hogar = total / 19170)
+            gasto_hogar = sum(GASTO) / num_households_2020)
 ```
