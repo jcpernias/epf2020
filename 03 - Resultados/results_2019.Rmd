@@ -78,3 +78,31 @@ gastos_2019 %>%
   summarise(total = sum(GASTO) / 1000,
             gasto_hogar = sum(GASTO) / num_households_2019)
 ```
+
+
+## Hogares y personas por comunidad autónoma
+
+```{r}
+hogar_2019 %>% group_by(CCAA) %>% 
+  count(name = "hogares", wt = FACTOR) %>%
+  ungroup() %>% 
+  mutate(hogares_pct = 100 * hogares / sum(hogares))
+```
+
+```{r}
+hogar_2019 %>% group_by(CCAA) %>% 
+  count(name = "personas", wt = FACTOR * NMIEMB) %>%
+  ungroup() %>% 
+  mutate(personas_pct = 100 * personas / sum(personas))
+```
+
+## Gasto por comunidad autónoma
+
+```{r}
+hogar_2019 %>% group_by(CCAA) %>% 
+  summarise(Gasto = sum(GASTOT), 
+            hogares = sum(FACTOR), 
+            Gh = Gasto / hogares, 
+            personas = sum(FACTOR * NMIEMB),
+            Gp = Gasto / personas)
+```
