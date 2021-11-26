@@ -126,8 +126,8 @@ eng <- lm(log(G) ~ log(R), data = budget2)
 summary(eng)
 ```
 ```{r}
-ggplot(budget2) +
-  geom_point(aes(x = R, y = D)) 
+ggplot(budget2, aes(x = R, y = D)) +
+  geom_point(alpha = 1/4, fill = "black", shape = "circle filled") 
 ```
 
 
