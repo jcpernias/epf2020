@@ -15,6 +15,7 @@ Bibliotecas R:
 ```{r}
 library(tidyverse)
 library(glue)
+library(ggplot2)
 ```
 Carpeta de datos:
 ```{r}
@@ -77,6 +78,63 @@ gastos_2019 %>%
   group_by(code2) %>%
   summarise(total = sum(GASTO) / 1000,
             gasto_hogar = sum(GASTO) / num_households_2019)
+```
+
+## Ingresos
+
+```{r}
+hogar_2019 %>% 
+  group_by(CCAA) %>%
+  summarise(G = sum(GASTOT / 12), 
+            h = sum(FACTOR), 
+            R = sum(IMPEXAC * FACTOR),
+            Gh = G / h, 
+            Rh = R / h)
+
+```
+
+```{r}
+budget <- hogar_2019 %>% 
+  mutate(G = GASTOT / (FACTOR * 12), 
+         R = IMPEXAC,
+         D = G - R) %>%
+  select(G, R, D, FACTOR)
+```
+
+```{r}
+budget %>% 
+  mutate(noinc = if_else(R <= 0, 1, 0)) %>%
+  group_by(noinc) %>%
+  count(wt = FACTOR) %>%
+  ungroup() %>%
+  mutate(pct = 100 * n / sum(n))
+```
+
+
+```{r}
+budget2 <- budget %>% filter(R > 0)
+
+ggplot(budget2) +
+  geom_point(aes(x = G, y = R)) + 
+  scale_x_log10() +
+  scale_y_log10()
+```
+
+```{r}
+
+eng <- lm(log(G) ~ log(R), data = budget2)
+summary(eng)
+```
+```{r}
+ggplot(budget2) +
+  geom_point(aes(x = R, y = D)) 
+```
+
+
+
+```{r}
+def <- lm(D ~ R, data = budget2)
+summary(def)
 ```
 
 
