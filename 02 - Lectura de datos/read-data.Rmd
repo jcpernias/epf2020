@@ -113,28 +113,28 @@ write_epf_data <- function(year, path) {
   hogar <- read_epf_file("hogar", year, epf_dict)
   db_name <- glue("hogar_{year}")
   write_data(hogar, db_name, file.path(path, glue("{db_name}.Rdata")))
-
+  
   
   miembros <- read_epf_file("miembros", year, epf_dict)
   db_name <- glue("miembros_{year}")
   write_data(miembros, db_name, file.path(path, glue("{db_name}.Rdata")))
-
+  
   gastos_orig <- read_epf_file("gastos", year, epf_dict)
-
+  
   gastos_tipo <- gastos_orig %>%
-  select(ANOENC, NUMERO, CODIGO, GASTMON, 
-         GASTNOM1, GASTNOM2, GASTNOM3, GASTNOM4, GASTNOM5) %>%
-  pivot_longer(-c(ANOENC, CODIGO, NUMERO), 
-               names_to = "TIPO",
-               values_to = "VALOR") %>%
-  filter(!is.na(VALOR))
-
+    select(ANOENC, NUMERO, CODIGO, GASTMON, 
+           GASTNOM1, GASTNOM2, GASTNOM3, GASTNOM4, GASTNOM5) %>%
+    pivot_longer(-c(ANOENC, CODIGO, NUMERO), 
+                 names_to = "TIPO",
+                 values_to = "VALOR") %>%
+    filter(!is.na(VALOR))
+  
   gastos <- gastos_orig %>% 
-    select(-(GASTMON:GASTNOM5))
-
+    select(-(GASTNOM1:GASTNOM5))
+  
   db_name <- glue("gastos_{year}")
   write_data(gastos, db_name, file.path(path, glue("{db_name}.Rdata")))
-
+  
   db_name <- glue("gastos_tipo_{year}")
   write_data(gastos_tipo, db_name, file.path(path, glue("{db_name}.Rdata")))
 }
